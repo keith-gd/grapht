@@ -1,0 +1,28 @@
+{
+  "name": "@agent-analytics/cli",
+  "version": "0.1.0",
+  "description": "CLI tool for Agent Analytics Platform",
+  "main": "bin/cli.js",
+  "bin": {
+    "agent-analytics": "./bin/cli.js"
+  },
+  "scripts": {
+    "dev": "node bin/cli.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "agent-analytics",
+    "cli",
+    "telemetry"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "commander": "^11.0.0",
+    "inquirer": "^9.2.0",
+    "axios": "^1.4.0",
+    "chalk": "^5.3.0",
+    "fs-extra": "^11.1.1"
+  }
+}
+

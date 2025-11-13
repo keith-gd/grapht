@@ -1,0 +1,11 @@
+version: 2
+
+sources:
+  - name: raw
+    schema: raw
+    tables:
+      - name: git_commits
+      - name: otel_metrics
+      - name: otel_logs
+      - name: copilot_metrics
+

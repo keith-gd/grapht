@@ -1,0 +1,44 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch:
+    timeout: 10s
+    send_batch_size: 100
+  
+  # Extract developer_id from OTLP headers and add to resource attributes
+  attributes:
+    actions:
+      - key: developer_id
+        from_context: x-developer-id
+        action: upsert
+
+exporters:
+  # Log all received data for debugging
+  logging:
+    loglevel: debug
+  
+  # Forward to API endpoint for processing and storage
+  otlphttp:
+    endpoint: http://api:3000/v1/otel
+    tls:
+      insecure: true
+    headers:
+      Content-Type: "application/json"
+
+service:
+  pipelines:
+    metrics:
+      receivers: [otlp]
+      processors: [batch, attributes]
+      exporters: [logging, otlphttp]
+    
+    logs:
+      receivers: [otlp]
+      processors: [batch, attributes]
+      exporters: [logging, otlphttp]

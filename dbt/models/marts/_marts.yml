@@ -1,0 +1,41 @@
+version: 2
+
+models:
+  - name: fct_daily_agent_usage
+    description: "Daily agent usage and cost metrics"
+    columns:
+      - name: date
+        description: "Date of usage"
+        tests:
+          - not_null
+      
+      - name: developer_id
+        description: "Unique developer identifier"
+        tests:
+          - not_null
+      
+      - name: total_cost_usd
+        description: "Total cost in USD"
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+              config:
+                where: "total_cost_usd IS NOT NULL"
+      
+      - name: cost_per_commit_usd
+        description: "Average cost per commit"
+        tests:
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+              config:
+                where: "cost_per_commit_usd IS NOT NULL"
+
+  - name: fct_git_commits
+    description: "All commits with agent enrichment"
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - commit_hash
+            - developer_id
+

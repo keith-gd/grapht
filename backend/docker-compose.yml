@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: agent-analytics-otel
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
+      - "8888:8888"   # Prometheus metrics
+    depends_on:
+      api:
+        condition: service_started
+
+  api:
+    build: ./api
+    container_name: agent-analytics-api
+    environment:
+      DATA_DIR: /app/data
+      PORT: 3000
+      API_KEY: ${API_KEY:-dev_local_key}
+      NODE_ENV: ${NODE_ENV:-development}
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./api:/app
+      - ./init_duckdb.sql:/app/init_duckdb.sql
+      - ./data:/app/data
+      - /app/node_modules
+    restart: unless-stopped
+
+  metabase:
+    image: metabase/metabase:latest
+    container_name: agent-analytics-metabase
+    environment:
+      MB_DB_TYPE: sqlite
+      MB_DB_FILE: /metabase-data/metabase.db
+    ports:
+      - "3001:3000"
+    volumes:
+      - metabase_data:/metabase-data
+    restart: unless-stopped
+
+volumes:
+  metabase_data:
+
