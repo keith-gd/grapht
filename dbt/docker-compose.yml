@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  dbt:
+    build: .
+    container_name: agent-analytics-dbt
+    volumes:
+      - .:/dbt
+      - ../backend/data:/data
+    working_dir: /dbt
+    environment:
+      DBT_PROFILES_DIR: /dbt
+    # Override command to keep container running
+    command: tail -f /dev/null
