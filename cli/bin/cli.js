@@ -8,6 +8,7 @@
 const { Command } = require('commander');
 const initCommand = require('../commands/init');
 const logCommitCommand = require('../commands/log-commit');
+const logSessionCommand = require('../commands/log-session');
 
 const program = new Command();
 
@@ -41,6 +42,26 @@ program
   .option('--lines-deleted <n>', 'Lines deleted', parseInt)
   .action(async (options) => {
     await logCommitCommand(options);
+  });
+
+// Log session command (manually log agent sessions)
+program
+  .command('log-session')
+  .description('Manually log an agent session (Droid, Cursor, etc.)')
+  .option('--agent <type>', 'Agent type (factory_droid, cursor, claude_code, github_copilot)')
+  .option('--model <name>', 'Model name (e.g., claude-sonnet-4.5)')
+  .option('--input-tokens <count>', 'Input tokens used', parseInt)
+  .option('--output-tokens <count>', 'Output tokens generated', parseInt)
+  .option('--cache-creation-tokens <count>', 'Cache creation tokens', parseInt)
+  .option('--cache-read-tokens <count>', 'Cache read tokens', parseInt)
+  .option('--cost <amount>', 'Total cost in USD', parseFloat)
+  .option('--start <iso-date>', 'Session start time (ISO 8601)')
+  .option('--end <iso-date>', 'Session end time (ISO 8601)')
+  .option('--session-id <id>', 'Custom session ID')
+  .option('--developer-id <id>', 'Developer ID (overrides config)')
+  .option('--metadata <json>', 'Additional metadata as JSON string')
+  .action(async (options) => {
+    await logSessionCommand(options);
   });
 
 // Parse arguments

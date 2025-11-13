@@ -65,6 +65,29 @@ CREATE TABLE IF NOT EXISTS raw.git_commits (
 );
 
 -- ============================================================================
+-- RAW TABLES - Agent Sessions (Manual Logging)
+-- ============================================================================
+
+CREATE SEQUENCE IF NOT EXISTS raw.agent_sessions_id_seq START 1;
+
+CREATE TABLE IF NOT EXISTS raw.agent_sessions (
+    id INTEGER PRIMARY KEY DEFAULT nextval('raw.agent_sessions_id_seq'),
+    session_id VARCHAR(255) UNIQUE NOT NULL,
+    developer_id VARCHAR(255) NOT NULL,
+    agent_type VARCHAR(50) NOT NULL,
+    model_name VARCHAR(255),
+    session_start TIMESTAMP,
+    session_end TIMESTAMP,
+    input_tokens INTEGER DEFAULT 0,
+    output_tokens INTEGER DEFAULT 0,
+    cache_creation_tokens INTEGER DEFAULT 0,
+    cache_read_tokens INTEGER DEFAULT 0,
+    total_cost DECIMAL(10, 4),
+    metadata JSON,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ============================================================================
 -- RAW TABLES - Copilot Metrics
 -- ============================================================================
 
@@ -112,6 +135,13 @@ ON raw.git_commits(agent_session_id);
 
 CREATE INDEX IF NOT EXISTS idx_git_commits_project 
 ON raw.git_commits(project_id, commit_timestamp DESC);
+
+-- Agent sessions indexes
+CREATE INDEX IF NOT EXISTS idx_agent_sessions_developer 
+ON raw.agent_sessions(developer_id, session_start DESC);
+
+CREATE INDEX IF NOT EXISTS idx_agent_sessions_agent_type 
+ON raw.agent_sessions(agent_type, session_start DESC);
 
 -- Copilot metrics indexes
 CREATE INDEX IF NOT EXISTS idx_copilot_developer_date 

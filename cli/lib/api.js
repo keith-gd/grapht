@@ -4,7 +4,6 @@
  */
 
 const axios = require('axios');
-const chalk = require('chalk');
 
 /**
  * Create API client instance
@@ -26,12 +25,12 @@ function createClient(baseURL, apiKey) {
   client.interceptors.request.use(
     (config) => {
       if (process.env.DEBUG) {
-        console.log(chalk.gray(`→ ${config.method.toUpperCase()} ${config.url}`));
+        console.log((`→ ${config.method.toUpperCase()} ${config.url}`));
       }
       return config;
     },
     (error) => {
-      console.error(chalk.red('Request error:'), error.message);
+      console.error(('Request error:'), error.message);
       return Promise.reject(error);
     }
   );
@@ -40,7 +39,7 @@ function createClient(baseURL, apiKey) {
   client.interceptors.response.use(
     (response) => {
       if (process.env.DEBUG) {
-        console.log(chalk.gray(`← ${response.status} ${response.config.url}`));
+        console.log((`← ${response.status} ${response.config.url}`));
       }
       return response;
     },
@@ -51,21 +50,21 @@ function createClient(baseURL, apiKey) {
         const message = error.response.data?.message || error.message;
         
         if (status === 401) {
-          console.error(chalk.red('❌ Authentication failed. Check your API key.'));
+          console.error(('❌ Authentication failed. Check your API key.'));
         } else if (status === 400) {
-          console.error(chalk.red(`❌ Bad request: ${message}`));
+          console.error((`❌ Bad request: ${message}`));
         } else if (status >= 500) {
-          console.error(chalk.red(`❌ Server error: ${message}`));
+          console.error((`❌ Server error: ${message}`));
         } else {
-          console.error(chalk.red(`❌ Error: ${message}`));
+          console.error((`❌ Error: ${message}`));
         }
       } else if (error.request) {
         // Request made but no response
-        console.error(chalk.red('❌ No response from server. Is the API running?'));
-        console.error(chalk.gray(`   URL: ${error.config?.url}`));
+        console.error(('❌ No response from server. Is the API running?'));
+        console.error((`   URL: ${error.config?.url}`));
       } else {
         // Error setting up request
-        console.error(chalk.red(`❌ Request setup error: ${error.message}`));
+        console.error((`❌ Request setup error: ${error.message}`));
       }
       
       return Promise.reject(error);
@@ -94,6 +93,44 @@ async function sendCommit(commitData, baseURL, apiKey) {
 }
 
 /**
+ * Make a generic API request
+ * @param {string} baseURL - API base URL
+ * @param {string} path - API path
+ * @param {string} method - HTTP method
+ * @param {Object} data - Request body
+ * @param {string} apiKey - API key
+ * @returns {Promise<Object>} API response
+ */
+async function makeRequest(baseURL, path, method = 'GET', data = null, apiKey = null) {
+  const client = createClient(baseURL, apiKey);
+  
+  try {
+    let response;
+    
+    switch (method.toUpperCase()) {
+      case 'GET':
+        response = await client.get(path);
+        break;
+      case 'POST':
+        response = await client.post(path, data);
+        break;
+      case 'PUT':
+        response = await client.put(path, data);
+        break;
+      case 'DELETE':
+        response = await client.delete(path);
+        break;
+      default:
+        throw new Error(`Unsupported HTTP method: ${method}`);
+    }
+    
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+/**
  * Check API health
  * @param {string} baseURL - API base URL
  * @returns {Promise<boolean>} True if healthy
@@ -115,6 +152,7 @@ async function checkHealth(baseURL) {
 module.exports = {
   createClient,
   sendCommit,
+  makeRequest,
   checkHealth
 };
 

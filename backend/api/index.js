@@ -19,6 +19,7 @@ app.use(express.json({ limit: '10mb' }));
 // Import routes
 const commitsRouter = require('./routes/commits');
 const otelRouter = require('./routes/otel');
+const sessionsRouter = require('./routes/sessions');
 
 // Import middleware
 const errorHandler = require('./middleware/errorHandler');
@@ -35,6 +36,7 @@ app.get('/health', (req, res) => {
 // API routes
 app.use('/v1/commits', commitsRouter);
 app.use('/v1/otel', otelRouter);
+app.use('/v1/agent-sessions', sessionsRouter);
 
 // Root endpoint
 app.get('/', (req, res) => {
