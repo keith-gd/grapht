@@ -48,7 +48,7 @@ router.post('/', authenticate, async (req, res, next) => {
         total_cost,
         metadata,
         created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, CURRENT_TIMESTAMP)
     `, [
       session_id,
       developer_id,
@@ -91,12 +91,14 @@ router.get('/', authenticate, async (req, res, next) => {
     const params = [];
 
     if (developerId) {
-      query += ' WHERE developer_id = ?';
+      query += ' WHERE developer_id = $1';
       params.push(developerId);
+      query += ' ORDER BY session_start DESC LIMIT $2';
+      params.push(limit);
+    } else {
+      query += ' ORDER BY session_start DESC LIMIT $1';
+      params.push(limit);
     }
-
-    query += ' ORDER BY session_start DESC LIMIT ?';
-    params.push(limit);
 
     const result = await pool.query(query, params);
 
