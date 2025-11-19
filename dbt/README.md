@@ -77,6 +77,39 @@ models/
 - **Path:** `/data/agent_analytics.duckdb` (mapped to `../backend/data/`)
 - **Schema:** `main`
 
+## Data Exploration & Lineage
+
+When you need to find which models use a specific column or table, use dbt's built-in Python tools instead of manual searching:
+
+### Find Column Usage
+```bash
+# Find all models that reference a specific column
+make dbt CMD='ls --select "+columns:session_id" --resource-type model'
+
+# Or use Python directly in the container
+make shell
+python -c "from dbt.cli.main import dbtRunner; runner = dbtRunner(); runner.invoke(['ls', '--select', '+columns:session_id'])"
+```
+
+### Find Table/Model Dependencies
+```bash
+# Find all models that depend on a specific source or model
+make dbt CMD='ls --select "+source:raw.git_commits"'
+make dbt CMD='ls --select "+stg_git_commits+"'  # upstream and downstream
+
+# List all models in a specific path
+make dbt CMD='ls --select "path:marts/"'
+```
+
+### View Lineage DAG
+```bash
+# Generate and serve interactive documentation with lineage
+make docs
+make docs-serve  # View at http://localhost:8080
+```
+
+**Pro Tip:** The `dbt ls` command is much faster than grep/find for exploring data lineage because it parses the dbt project structure and understands model dependencies.
+
 ## Development Workflow
 
 1. **Edit SQL models** in `models/` directory

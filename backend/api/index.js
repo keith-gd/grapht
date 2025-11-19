@@ -1,9 +1,16 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 require('express-async-errors'); // Must be imported before routes to catch async errors
 require('dotenv').config();
 
+// Handle BigInt serialization
+BigInt.prototype.toJSON = function() { return Number(this); }
+
 const app = express();
+
+// Serve frontend static files
+app.use(express.static(path.join(__dirname, '../../frontend/public')));
 
 // CORS configuration - allow frontend, Metabase, and file:// for local dev
 const corsOptions = {
@@ -42,8 +49,8 @@ app.use('/v1/agent-sessions', sessionsRouter);
 app.use('/api/metrics', metricsRouter);
 app.use('/api/sessions', sessionsGetRouter);
 
-// Root endpoint
-app.get('/', (req, res) => {
+// Root endpoint (API info)
+app.get('/api', (req, res) => {
   res.json({
     name: 'Agent Analytics API',
     version: '1.0.0',
@@ -53,6 +60,14 @@ app.get('/', (req, res) => {
       otel: '/v1/otel'
     }
   });
+});
+
+// Fallback to index.html for any other non-API routes (SPA support)
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api') || req.path.startsWith('/v1') || req.path === '/health') {
+    return next();
+  }
+  res.sendFile(path.join(__dirname, '../../frontend/public/index.html'));
 });
 
 // Error handling middleware (must be last)

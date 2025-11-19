@@ -1,0 +1,81 @@
+# Agent Analytics Platform - Cursor Rules
+
+## 🔗 Working with Beads (Task Management)
+
+**Beads** = External memory for tracking improvements across sessions (survives context resets)
+
+### 🚨 Common Error Prevention
+
+**BEFORE calling `bd` commands, follow these patterns:**
+
+#### 1. Query Issues (Most Common)
+
+```bash
+# ✅ CORRECT - Always use --json for programmatic access
+bd list --assignee claude --json
+
+# ❌ WRONG - Plain text hard to parse
+bd list --assignee claude
+```
+
+#### 2. Create Issues
+
+```bash
+# ✅ CORRECT - Explicit flags
+bd create --title "Fix issue X" --assignee claude --priority 1
+
+# ❌ WRONG - Missing quotes on multi-word titles
+bd create --title Fix issue X
+
+# ❌ WRONG - Invalid priority (must be 0-4)
+bd create --title "Task" --priority 5
+```
+
+**Valid values:**
+- `--priority`: 0 (P0/critical) to 4 (P4/nice-to-have)
+- `--assignee`: `claude` or `human`
+- `--status`: `open`, `in-progress`, `closed`, `archived`
+
+#### 3. Update Issues
+
+```bash
+# ✅ CORRECT - Valid status value
+bd update dbt-agent-123 --status in-progress
+
+# ❌ WRONG - Invalid status (must be hyphenated)
+bd update dbt-agent-123 --status "in progress"
+
+# ❌ WRONG - Missing issue ID
+bd update --status closed
+```
+
+#### 4. Verify Before Update
+
+```bash
+# ✅ ALWAYS check issue exists first
+bd show dbt-agent-123 --json
+
+# Then update if found
+bd update dbt-agent-123 --status closed
+```
+
+### 📋 Quick Reference
+
+**Session Start:**
+```bash
+bd list --assignee claude --json | head -50
+```
+
+**Create During Work:**
+```bash
+bd create --title "[improvement]" \
+  --assignee claude \
+  --priority 1 \
+  --deps "discovered-from:dbt-agent-X"
+```
+
+**Mark Complete:**
+```bash
+bd update dbt-agent-X --status closed
+```
+

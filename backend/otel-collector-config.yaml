@@ -20,12 +20,12 @@ processors:
 
 exporters:
   # Log all received data for debugging
-  logging:
-    loglevel: debug
+  debug:
+    verbosity: detailed
   
   # Forward to API endpoint for processing and storage
   otlphttp:
-    endpoint: http://api:3000/v1/otel
+    endpoint: http://localhost:3000/v1/otel
     tls:
       insecure: true
     headers:
@@ -36,9 +36,9 @@ service:
     metrics:
       receivers: [otlp]
       processors: [batch, attributes]
-      exporters: [logging, otlphttp]
+      exporters: [debug, otlphttp]
     
     logs:
       receivers: [otlp]
       processors: [batch, attributes]
-      exporters: [logging, otlphttp]
+      exporters: [debug, otlphttp]

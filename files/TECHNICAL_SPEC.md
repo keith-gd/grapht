@@ -154,7 +154,7 @@ export OTEL_LOGS_EXPORT_INTERVAL=5000
 #!/bin/bash
 # .git/hooks/post-commit
 
-# Capture commit metadata
+# Capture commit metadata1
 COMMIT_HASH=$(git rev-parse HEAD)
 COMMIT_MSG=$(git log -1 --pretty=%B)
 COMMIT_AUTHOR=$(git log -1 --pretty=%an)

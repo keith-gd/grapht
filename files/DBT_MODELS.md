@@ -669,6 +669,60 @@ models:
 
 ---
 
+## Best Practices for Development
+
+### Exploring Data Lineage
+
+When working with dbt models, use dbt's built-in commands instead of manual file searching:
+
+**❌ Don't do this:**
+```bash
+grep -r "session_id" models/  # Slow and misses context
+find models/ -name "*.sql" -exec grep -l "git_commits" {} \;  # Manual
+```
+
+**✅ Do this instead:**
+```bash
+# Find all models using a specific column
+dbt ls --select "+columns:session_id" --resource-type model
+
+# Find all downstream dependencies of a model
+dbt ls --select "stg_git_commits+"
+
+# Find all upstream dependencies
+dbt ls --select "+int_sessions_with_costs"
+
+# View full lineage in browser
+dbt docs generate && dbt docs serve
+```
+
+**Why?** dbt's `ls` command:
+- Understands dbt's `ref()` and `source()` functions
+- Shows true dependencies, not just text matches
+- Much faster for large projects
+- Provides structured output you can pipe to other commands
+
+### Using Python for Complex Queries
+
+For programmatic access to dbt metadata:
+
+```python
+from dbt.cli.main import dbtRunner
+
+runner = dbtRunner()
+
+# Get list of models with a specific column
+result = runner.invoke(['ls', '--select', 'columns:developer_id'])
+
+# Parse the result
+for model in result.result:
+    print(model)
+```
+
+This is especially useful when building tools or scripts that need to understand your dbt project structure.
+
+---
+
 ## Usage
 
 ### Run All Models

@@ -19,26 +19,38 @@ const connection = db.connect();
 // Promisify DuckDB query execution
 function query(sql, params = []) {
   return new Promise((resolve, reject) => {
-    connection.all(sql, params, (err, result) => {
+    const cb = (err, result) => {
       if (err) {
         reject(err);
       } else {
         resolve({ rows: result || [] });
       }
-    });
+    };
+
+    if (params && params.length > 0) {
+      connection.all(sql, ...params, cb);
+    } else {
+      connection.all(sql, cb);
+    }
   });
 }
 
 // Execute a query without returning results (for DDL statements)
 function run(sql, params = []) {
   return new Promise((resolve, reject) => {
-    connection.run(sql, params, (err) => {
+    const cb = (err) => {
       if (err) {
         reject(err);
       } else {
         resolve();
       }
-    });
+    };
+
+    if (params && params.length > 0) {
+      connection.run(sql, ...params, cb);
+    } else {
+      connection.run(sql, cb);
+    }
   });
 }
 

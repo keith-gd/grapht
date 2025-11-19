@@ -28,25 +28,46 @@ const connection = db.connect();
 // Promisify DuckDB query execution
 function query(sql, params = []) {
   return new Promise((resolve, reject) => {
-    connection.all(sql, params, (err, result) => {
+    const cb = (err, result) => {
       if (err) {
         reject(err);
       } else {
         resolve(result || []);
       }
-    });
+    };
+
+    if (params && params.length > 0) {
+      connection.all(sql, ...params, cb);
+    } else {
+      connection.all(sql, cb);
+    }
   });
 }
 
 function run(sql, params = []) {
   return new Promise((resolve, reject) => {
-    connection.run(sql, params, (err) => {
+    console.log('Executing SQL:', sql.substring(0, 100) + '...');
+    const cb = (err) => {
       if (err) {
+        console.error('SQL Execution Error:', err.message);
+        console.error('SQL Preview:', sql.substring(0, 200));
         reject(err);
       } else {
         resolve();
       }
-    });
+    };
+
+
+    try {
+      if (params && params.length > 0) {
+        connection.run(sql, ...params, cb);
+      } else {
+        connection.run(sql, cb);
+      }
+    } catch (err) {
+      console.error('Synchronous SQL Error:', err.message);
+      reject(err);
+    }
   });
 }
 
@@ -146,6 +167,22 @@ async function generateAgentSessions() {
     await run(`
       INSERT INTO raw.otel_logs (timestamp, developer_id, severity, body, attributes)
       VALUES ${values}
+    `);
+  }
+
+  // Insert into raw.agent_sessions
+  console.log('  → Inserting into raw.agent_sessions...');
+  const sessionValues = sessions.map(s => {
+    const inputTokens = randomInt(1000, 50000);
+    const outputTokens = randomInt(500, 20000);
+    const totalCost = (inputTokens * 0.003 / 1000) + (outputTokens * 0.015 / 1000);
+    return `('${s.sessionId}', '${s.developerId}', '${s.agentType}', ${s.modelName ? `'${s.modelName}'` : 'NULL'}, '${s.sessionStart.toISOString()}', '${s.sessionEnd.toISOString()}', ${inputTokens}, ${outputTokens}, ${totalCost})`;
+  }).join(', ');
+
+  if (sessionValues.length > 0) {
+    await run(`
+      INSERT INTO raw.agent_sessions (session_id, developer_id, agent_type, model_name, session_start, session_end, input_tokens, output_tokens, total_cost)
+      VALUES ${sessionValues}
     `);
   }
   

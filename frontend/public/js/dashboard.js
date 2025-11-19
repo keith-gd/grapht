@@ -14,8 +14,8 @@ async function initDashboard() {
     // Load initial data
     await refreshDashboard();
     
-    // Auto-refresh every 30 seconds
-    refreshInterval = setInterval(refreshDashboard, 30000);
+    // Auto-refresh every hour (3600000 ms) to avoid chart animation annoyance
+    refreshInterval = setInterval(refreshDashboard, 3600000);
     
   } catch (error) {
     console.error('Failed to initialize dashboard:', error);
