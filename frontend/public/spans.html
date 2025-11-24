@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Span Analytics | Agent Analytics</title>
+  <link rel="stylesheet" href="css/dashboard.css">
+  <style>
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 16px;
+      padding: 20px;
+    }
+    .chart-container {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      padding: 16px;
+      min-height: 300px;
+    }
+    .span-4 { grid-column: span 4; }
+    .span-6 { grid-column: span 6; }
+    .span-8 { grid-column: span 8; }
+    .span-12 { grid-column: span 12; }
+    
+    @media (max-width: 1200px) {
+      .span-4, .span-6, .span-8 { grid-column: span 12; }
+    }
+
+    .tooltip {
+      position: absolute;
+      opacity: 0;
+      background: rgba(0,0,0,0.8);
+      color: white;
+      padding: 8px;
+      border-radius: 4px;
+      pointer-events: none;
+      font-size: 12px;
+      font-family: monospace;
+      z-index: 100;
+    }
+  </style>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+  <div class="dashboard">
+    <!-- Header -->
+    <header class="dashboard-header">
+      <div style="display: flex; align-items: center; gap: 1rem;">
+        <a href="/" style="text-decoration: none; font-size: 1.5rem;">🔙</a>
+        <h1>🔬 Granular Span Analytics</h1>
+      </div>
+      <div class="refresh-indicator">
+        <span id="last-update">Loading...</span>
+        <button id="refresh-btn" onclick="initSpanDashboard()">🔄 Refresh</button>
+      </div>
+    </header>
+
+    <div class="dashboard-grid">
+      <!-- Row 1: Overview -->
+      <div class="chart-container span-12">
+        <h2 class="chart-title">📅 Cost Heatmap (Last 90 Days)</h2>
+        <div id="cost-heatmap" style="width: 100%; height: 200px;"></div>
+      </div>
+      
+      <!-- Row 2: Deep Dives -->
+      <div class="chart-container span-8">
+        <h2 class="chart-title">🌊 Trace Waterfall (Most Recent Complex Trace)</h2>
+        <div id="trace-waterfall" style="width: 100%; height: 400px; overflow-y: auto;"></div>
+      </div>
+      
+      <div class="chart-container span-4">
+        <h2 class="chart-title">🔗 Common Tool Chains</h2>
+        <div id="tool-chains" style="width: 100%; height: 400px; overflow-y: auto;"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/advanced-charts.js"></script>
+  <script>
+    async function initSpanDashboard() {
+      console.log('Initializing Span Dashboard...');
+      const updateLabel = document.getElementById('last-update');
+      updateLabel.textContent = 'Loading data...';
+      
+      try {
+        // Fetch data
+        const [costHistory, spans, toolChains] = await Promise.all([
+          api.getCostTimeseries(90),
+          api.getSpans(50),
+          api.getToolChains()
+        ]);
+        
+        // Render Cost Heatmap
+        renderCostHeatmap(costHistory, 'cost-heatmap');
+        
+        // Render Trace Waterfall (Find a trace with multiple spans)
+        // Group spans by trace_id locally for selection
+        const traces = d3.group(spans, d => d.trace_id);
+        let selectedTraceId = null;
+        let maxLen = 0;
+        
+        for (const [tid, tSpans] of traces) {
+          if (tSpans.length > maxLen) {
+            maxLen = tSpans.length;
+            selectedTraceId = tid;
+          }
+        }
+        
+        if (selectedTraceId) {
+          // Fetch full trace details including tool calls (which might not be in the summary list)
+          const fullTrace = await api.getTrace(selectedTraceId);
+          renderTraceWaterfall(fullTrace, 'trace-waterfall');
+        } else if (spans.length > 0) {
+           renderTraceWaterfall([spans[0]], 'trace-waterfall');
+        } else {
+           document.getElementById('trace-waterfall').innerHTML = '<p style="text-align:center; margin-top: 2rem; color: #666;">No traces found</p>';
+        }
+
+        // Render Tool Chains List (Simple implementation for now)
+        const chainContainer = document.getElementById('tool-chains');
+        chainContainer.innerHTML = '';
+        if (toolChains && toolChains.length) {
+          const ul = document.createElement('ul');
+          ul.style.listStyle = 'none';
+          ul.style.padding = '0';
+          
+          toolChains.forEach(chain => {
+            const li = document.createElement('li');
+            li.style.marginBottom = '12px';
+            li.style.borderBottom = '1px solid #eee';
+            li.style.paddingBottom = '8px';
+            
+            const count = document.createElement('span');
+            count.style.fontWeight = 'bold';
+            count.style.backgroundColor = '#e6f4ff';
+            count.style.color = '#0958d9';
+            count.style.padding = '2px 8px';
+            count.style.borderRadius = '10px';
+            count.style.fontSize = '12px';
+            count.textContent = `${chain.count}x`;
+            
+            const seq = document.createElement('div');
+            seq.style.marginTop = '4px';
+            seq.style.fontFamily = 'monospace';
+            seq.style.fontSize = '12px';
+            seq.style.color = '#444';
+            // Format chain visually
+            seq.innerHTML = chain.tool_chain.replace(/,/g, ' → ');
+            
+            li.appendChild(count);
+            li.appendChild(seq);
+            ul.appendChild(li);
+          });
+          chainContainer.appendChild(ul);
+        } else {
+          chainContainer.innerHTML = '<p style="text-align:center; margin-top: 2rem; color: #666;">No tool chains detected</p>';
+        }
+        
+        updateLabel.textContent = `Updated: ${new Date().toLocaleTimeString()}`;
+        
+      } catch (err) {
+        console.error('Dashboard error:', err);
+        updateLabel.textContent = 'Error loading data';
+      }
+    }
+    
+    document.addEventListener('DOMContentLoaded', initSpanDashboard);
+  </script>
+</body>
+</html>
+

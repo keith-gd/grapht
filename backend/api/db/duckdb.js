@@ -12,45 +12,122 @@ if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true });
 }
 
-// Initialize DuckDB connection
-const db = new duckdb.Database(dbPath);
-const connection = db.connect();
+// Global connection state
+let db = null;
+let connection = null;
 
-// Promisify DuckDB query execution
+function connect() {
+  try {
+    if (connection) return connection;
+    
+    console.log(`🔌 Connecting to DuckDB: ${dbPath}`);
+    db = new duckdb.Database(dbPath, (err) => {
+      if (err) console.error('❌ Database open error:', err);
+    });
+    
+    connection = db.connect();
+    console.log('✅ DuckDB connected');
+    return connection;
+  } catch (err) {
+    console.error('❌ Failed to connect to DuckDB:', err);
+    // Don't throw, let query handle it
+    return null;
+  }
+}
+
+// Initialize connection immediately
+connect();
+
+// Promisify DuckDB query execution with Retry Logic
 function query(sql, params = []) {
   return new Promise((resolve, reject) => {
-    const cb = (err, result) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve({ rows: result || [] });
+    const execute = (retryCount = 0) => {
+      const conn = connect();
+      
+      if (!conn) {
+        return reject(new Error('No database connection available'));
+      }
+
+      const cb = (err, result) => {
+        if (err) {
+          const errMsg = err.message || '';
+          // Retry on connection errors
+          if (retryCount < 2 && (errMsg.includes('Connection') || errMsg.includes('closed') || errMsg.includes('locked'))) {
+            console.warn(`⚠️ Query failed (${errMsg}), retrying connection...`);
+            connection = null; // Force reconnect
+            setTimeout(() => execute(retryCount + 1), 100); // Slight delay
+            return;
+          }
+          reject(err);
+        } else {
+          resolve({ rows: result || [] });
+        }
+      };
+
+      try {
+        if (params && params.length > 0) {
+          conn.all(sql, ...params, cb);
+        } else {
+          conn.all(sql, cb);
+        }
+      } catch (err) {
+        // Catch sync errors (like "db is not open")
+        if (retryCount < 2) {
+           console.warn(`⚠️ Query execution error, retrying...`);
+           connection = null;
+           setTimeout(() => execute(retryCount + 1), 100);
+        } else {
+           reject(err);
+        }
       }
     };
-
-    if (params && params.length > 0) {
-      connection.all(sql, ...params, cb);
-    } else {
-      connection.all(sql, cb);
-    }
+    
+    execute();
   });
 }
 
 // Execute a query without returning results (for DDL statements)
 function run(sql, params = []) {
   return new Promise((resolve, reject) => {
-    const cb = (err) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve();
+    const execute = (retryCount = 0) => {
+      const conn = connect();
+      
+      if (!conn) {
+        return reject(new Error('No database connection available'));
+      }
+
+      const cb = (err) => {
+        if (err) {
+          const errMsg = err.message || '';
+          if (retryCount < 2 && (errMsg.includes('Connection') || errMsg.includes('closed'))) {
+            console.warn(`⚠️ Run failed (${errMsg}), retrying connection...`);
+            connection = null;
+            setTimeout(() => execute(retryCount + 1), 100);
+            return;
+          }
+          reject(err);
+        } else {
+          resolve();
+        }
+      };
+
+      try {
+        if (params && params.length > 0) {
+          conn.run(sql, ...params, cb);
+        } else {
+          conn.run(sql, cb);
+        }
+      } catch (err) {
+         if (retryCount < 2) {
+           connection = null;
+           setTimeout(() => execute(retryCount + 1), 100);
+         } else {
+           reject(err);
+         }
       }
     };
 
-    if (params && params.length > 0) {
-      connection.run(sql, ...params, cb);
-    } else {
-      connection.run(sql, cb);
-    }
+    execute();
   });
 }
 
@@ -76,7 +153,6 @@ async function initializeSchema() {
       console.log(`📄 Loading schema from: ${initSqlPath}`);
       const initSql = fs.readFileSync(initSqlPath, 'utf8');
       // Split by semicolon and execute each statement
-      // Handle multi-line statements better
       const statements = initSql
         .split(';')
         .map(s => s.trim())
@@ -92,8 +168,7 @@ async function initializeSchema() {
             if (!errMsg.includes('already exists') && 
                 !errMsg.includes('duplicate') &&
                 !errMsg.includes('does not exist')) {
-              console.warn('Schema initialization warning:', err.message);
-              console.warn('Statement:', statement.substring(0, 100));
+              // console.warn('Schema initialization warning:', err.message);
             }
           }
         }
@@ -101,11 +176,10 @@ async function initializeSchema() {
       console.log('✅ DuckDB schema initialized');
     } else {
       console.warn('⚠️  init_duckdb.sql not found in any expected location, skipping schema initialization');
-      console.warn('   Tried paths:', possiblePaths);
     }
   } catch (error) {
     console.error('❌ Error initializing schema:', error);
-    throw error;
+    // Don't throw fatal error, allow app to start (db might be fine)
   }
 }
 
@@ -113,10 +187,10 @@ async function initializeSchema() {
 async function testConnection() {
   try {
     const result = await query('SELECT CURRENT_TIMESTAMP as now');
-    console.log('✅ DuckDB connection successful');
+    console.log('✅ DuckDB connection test passed');
     return true;
   } catch (error) {
-    console.error('❌ DuckDB connection failed:', error.message);
+    console.error('❌ DuckDB connection test failed:', error.message);
     return false;
   }
 }
@@ -134,4 +208,3 @@ module.exports = {
   testConnection,
   initializeSchema
 };
-

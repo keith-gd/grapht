@@ -106,6 +106,63 @@ CREATE TABLE IF NOT EXISTS raw.copilot_metrics (
 );
 
 -- ============================================================================
+-- RAW TABLES - Phoenix / OpenInference Spans
+-- ============================================================================
+
+-- LLM spans (one per API call)
+CREATE TABLE IF NOT EXISTS raw.llm_spans (
+  span_id VARCHAR(255) PRIMARY KEY,
+  trace_id VARCHAR(255) NOT NULL,
+  parent_span_id VARCHAR(255),
+  session_id VARCHAR(255),
+  
+  -- Timing
+  start_time TIMESTAMP NOT NULL,
+  end_time TIMESTAMP NOT NULL,
+  duration_ms DOUBLE, -- Generated column logic handled in application or view
+  
+  -- Model
+  model_name VARCHAR(255),
+  provider VARCHAR(255) DEFAULT 'anthropic',
+  
+  -- Tokens
+  prompt_tokens INTEGER,
+  completion_tokens INTEGER,
+  total_tokens INTEGER,
+  cache_read_tokens INTEGER,
+  cache_write_tokens INTEGER,
+  
+  -- Cost
+  prompt_cost_usd DOUBLE,
+  completion_cost_usd DOUBLE,
+  total_cost_usd DOUBLE,
+  
+  -- Content (JSON)
+  input_messages JSON,
+  output_messages JSON,
+  invocation_params JSON,
+  
+  -- Indexing
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tool call spans
+CREATE TABLE IF NOT EXISTS raw.tool_spans (
+  span_id VARCHAR(255) PRIMARY KEY,
+  trace_id VARCHAR(255) NOT NULL,
+  parent_span_id VARCHAR(255),
+  
+  tool_name VARCHAR(255) NOT NULL,
+  tool_arguments JSON,
+  tool_result JSON,
+  
+  start_time TIMESTAMP,
+  end_time TIMESTAMP,
+  duration_ms DOUBLE,
+  status VARCHAR(50)  -- success/error
+);
+
+-- ============================================================================
 -- INDEXES for Performance
 -- ============================================================================
 
@@ -147,3 +204,8 @@ ON raw.agent_sessions(agent_type, session_start DESC);
 CREATE INDEX IF NOT EXISTS idx_copilot_developer_date 
 ON raw.copilot_metrics(developer_id, date DESC);
 
+-- LLM Spans indexes
+CREATE INDEX IF NOT EXISTS idx_llm_spans_session ON raw.llm_spans(session_id);
+CREATE INDEX IF NOT EXISTS idx_llm_spans_time ON raw.llm_spans(start_time);
+CREATE INDEX IF NOT EXISTS idx_llm_spans_model ON raw.llm_spans(model_name);
+CREATE INDEX IF NOT EXISTS idx_tool_spans_name ON raw.tool_spans(tool_name);

@@ -28,7 +28,9 @@ const commitsRouter = require('./routes/commits');
 const otelRouter = require('./routes/otel');
 const sessionsRouter = require('./routes/sessions');
 const metricsRouter = require('./routes/metrics');
+const analyticsRouter = require('./routes/analytics');
 const sessionsGetRouter = require('./routes/sessions-get');
+const spansRouter = require('./routes/spans');
 
 // Import middleware
 const errorHandler = require('./middleware/errorHandler');
@@ -47,7 +49,9 @@ app.use('/v1/commits', commitsRouter);
 app.use('/v1/otel', otelRouter);
 app.use('/v1/agent-sessions', sessionsRouter);
 app.use('/api/metrics', metricsRouter);
+app.use('/api/analytics', analyticsRouter);
 app.use('/api/sessions', sessionsGetRouter);
+app.use('/v1/spans', spansRouter);
 
 // Root endpoint (API info)
 app.get('/api', (req, res) => {

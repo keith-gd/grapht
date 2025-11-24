@@ -29,12 +29,18 @@ async function refreshDashboard() {
   
   try {
     // Load all data in parallel
-    const [summary, costData, tokenData, comparisonData, sessions] = await Promise.all([
+    const [summary, costData, tokenData, comparisonData, sessions, tempoData, varianceData, flowData, latencyData, toolData, tokenDistData] = await Promise.all([
       api.getSummary(),
       api.getCostOverTime(30),
       api.getTokenBreakdown(),
       api.getAgentComparison(),
-      api.getRecentSessions(10)
+      api.getRecentSessions(10),
+      api.getTempoData(),
+      api.getVarianceData(),
+      api.getFlowData(),
+      api.getLatencyPercentiles(),
+      api.getToolUsage(),
+      api.getTokenDistribution()
     ]);
     
     // Update summary cards
@@ -43,8 +49,23 @@ async function refreshDashboard() {
     // Render charts
     renderCostChart(costData, 'cost-chart');
     renderTokenChart(tokenData, 'token-chart');
-    renderComparisonChart(comparisonData, 'comparison-chart');
+    // renderComparisonChart(comparisonData, 'comparison-chart'); // Replaced by advanced views
+    renderTempoChart(tempoData, 'tempo-chart');
+    renderVarianceChart(varianceData, 'variance-chart');
+    renderFlowChart(flowData, 'flow-chart');
     renderSessionsTable(sessions, 'sessions-table');
+
+    // Render distribution analysis charts
+    renderDistributions(tempoData, 'dist');
+
+    // Render new insight charts (use varianceData which has model_name)
+    renderModelEfficiencyChart(varianceData, 'model-efficiency-chart');
+    renderProductivityScatter(tempoData, 'productivity-scatter');
+
+    // Render Granular Span Charts
+    renderLatencyChart(latencyData, 'latency-chart');
+    renderToolUsageChart(toolData, 'tool-chart');
+    renderTokenDistributionChart(tokenDistData, 'token-dist-chart');
     
     // Update timestamp
     document.getElementById('last-update').textContent = 

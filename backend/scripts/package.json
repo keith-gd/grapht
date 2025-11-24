@@ -1,0 +1,19 @@
+{
+  "name": "scripts",
+  "version": "1.0.0",
+  "description": "This script generates realistic test data for the Agent Analytics Platform, including agent sessions, git commits, and Copilot metrics.",
+  "main": "generate-test-data.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "axios": "^1.13.2",
+    "dotenv": "^17.2.3",
+    "duckdb": "^1.4.2",
+    "uuid": "^13.0.0"
+  }
+}

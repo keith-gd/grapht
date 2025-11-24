@@ -6,12 +6,16 @@
   <title>Agent Analytics - Dashboard</title>
   <link rel="stylesheet" href="css/dashboard.css">
   <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="https://unpkg.com/d3-sankey@0.12.3/dist/d3-sankey.min.js"></script>
 </head>
 <body>
   <div class="dashboard">
     <!-- Header -->
     <header class="dashboard-header">
-      <h1>🤖 Agent Analytics</h1>
+      <div style="display: flex; align-items: center; gap: 1rem;">
+        <h1>🤖 Agent Analytics</h1>
+        <a href="spans.html" style="text-decoration: none; font-size: 1rem; background: #e6f4ff; padding: 4px 8px; border-radius: 4px; border: 1px solid #1890ff; color: #096dd9;">🔬 Span Analytics</a>
+      </div>
       <p class="subtitle">Real-time multi-agent observability</p>
       <div class="refresh-indicator">
         <span id="last-update">Loading...</span>
@@ -58,29 +62,96 @@
       </div>
     </div>
 
-    <!-- Main Charts -->
-    <div class="charts-grid">
-      <!-- Cost Over Time -->
+    <!-- Advanced Visualizations (Full Width) -->
+
+    <!-- Distribution Analysis -->
+    <div class="chart-container full-width" style="margin-bottom: 1rem;">
+      <h2>📊 Distribution Analysis</h2>
+      <p class="chart-subtitle">Understanding your session patterns</p>
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
+        <div>
+          <h4 style="margin: 0 0 0.5rem; font-size: 14px; color: #94a3b8;">Cost Distribution</h4>
+          <div id="dist-cost" style="height: 150px;"></div>
+        </div>
+        <div>
+          <h4 style="margin: 0 0 0.5rem; font-size: 14px; color: #94a3b8;">Duration Distribution</h4>
+          <div id="dist-duration" style="height: 150px;"></div>
+        </div>
+        <div>
+          <h4 style="margin: 0 0 0.5rem; font-size: 14px; color: #94a3b8;">Output/Input Ratio</h4>
+          <div id="dist-efficiency" style="height: 150px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- New Insight Charts -->
+    <div class="charts-grid" style="margin-bottom: 1rem;">
       <div class="chart-container">
-        <h2>💵 Cost Over Time</h2>
+        <h2>💰 Cost per 1k Tokens by Model</h2>
+        <p class="chart-subtitle">Lower is more efficient</p>
+        <div id="model-efficiency-chart" style="height: 200px;"></div>
+      </div>
+
+      <div class="chart-container">
+        <h2>⚡ Productivity: Tokens/min vs Cost</h2>
+        <p class="chart-subtitle">Top-right = high throughput, high cost</p>
+        <div id="productivity-scatter" style="height: 200px;"></div>
+      </div>
+    </div>
+
+    <!-- 1. Session Activity Heatmap -->
+    <div class="chart-container full-width" style="margin-bottom: 2rem;">
+      <h2>🟩 Session Activity (Last 30 Days)</h2>
+      <p class="chart-subtitle">GitHub-style contribution graph • Color = Session Count</p>
+      <div id="tempo-chart" class="chart" style="height: 140px;"></div>
+    </div>
+
+    <!-- 2. Cost Variance Explorer -->
+    <div class="chart-container full-width" style="margin-bottom: 2rem;">
+      <h2>📉 Cost Variance Explorer</h2>
+      <p class="chart-subtitle">Duration vs. Cost • Size = Tokens • Color = Model</p>
+      <div id="variance-chart" class="chart"></div>
+    </div>
+
+    <!-- 3. Session -> Commit Flow -->
+    <div class="chart-container full-width" style="margin-bottom: 2rem;">
+      <h2>🌊 Session → Commit Flow</h2>
+      <p class="chart-subtitle">Tracking output generation and waste</p>
+      <div id="flow-chart" class="chart"></div>
+    </div>
+
+    <!-- 4. Granular Span Analysis -->
+    <div class="charts-grid">
+      <div class="chart-container">
+        <h2>⏱️ Latency Percentiles</h2>
+        <div id="latency-chart" class="chart"></div>
+      </div>
+      
+      <div class="chart-container">
+        <h2>🛠️ Tool Usage</h2>
+        <div id="tool-chart" class="chart"></div>
+      </div>
+
+      <div class="chart-container full-width">
+        <h2>📈 Token Distribution (Per Call)</h2>
+        <div id="token-dist-chart" class="chart"></div>
+      </div>
+    </div>
+
+    <!-- Standard Charts Grid -->
+    <div class="charts-grid">
+      <div class="chart-container">
+        <h2>💵 Cost Trend</h2>
         <div id="cost-chart" class="chart"></div>
       </div>
 
-      <!-- Token Breakdown -->
       <div class="chart-container">
-        <h2>🎯 Token Usage by Agent</h2>
+        <h2>🎯 Token Distribution</h2>
         <div id="token-chart" class="chart"></div>
       </div>
 
-      <!-- Agent Comparison -->
       <div class="chart-container full-width">
-        <h2>🤖 Agent Performance Comparison</h2>
-        <div id="comparison-chart" class="chart"></div>
-      </div>
-
-      <!-- Recent Sessions -->
-      <div class="chart-container full-width">
-        <h2>📋 Recent Sessions</h2>
+        <h2>📋 Recent Activity</h2>
         <div id="sessions-table" class="table-container"></div>
       </div>
     </div>
@@ -89,6 +160,7 @@
   <!-- Scripts -->
   <script src="js/api.js"></script>
   <script src="js/charts.js"></script>
+  <script src="js/span-charts.js"></script>
   <script src="js/dashboard.js"></script>
 </body>
 </html>

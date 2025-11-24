@@ -31,8 +31,19 @@ exporters:
     headers:
       Content-Type: "application/json"
 
+  # Export to Phoenix
+  otlphttp/phoenix:
+    endpoint: http://phoenix:6006/v1/traces
+    tls:
+      insecure: true
+
 service:
   pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch, attributes]
+      exporters: [debug, otlphttp/phoenix]
+
     metrics:
       receivers: [otlp]
       processors: [batch, attributes]

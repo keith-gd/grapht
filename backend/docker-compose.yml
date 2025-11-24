@@ -32,6 +32,16 @@ services:
       - /app/node_modules
     restart: unless-stopped
 
+  phoenix:
+    image: arizephoenix/phoenix:latest
+    container_name: agent-analytics-phoenix
+    ports:
+      - "6006:6006" # Phoenix UI
+    environment:
+      - PHOENIX_HOST=0.0.0.0
+      - PHOENIX_PORT=6006
+    restart: unless-stopped
+
   metabase:
     image: metabase/metabase:latest
     container_name: agent-analytics-metabase
