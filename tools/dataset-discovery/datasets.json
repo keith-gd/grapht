@@ -1,0 +1,135 @@
+{
+  "categories": [
+    {
+      "id": "health",
+      "name": "Health & Mortality",
+      "icon": "🏥",
+      "datasets": [
+        {
+          "id": "cdc-wonder-overdose",
+          "title": "CDC WONDER: Drug Overdose Deaths",
+          "source": "CDC/NCHS",
+          "url": "https://wonder.cdc.gov/mcd.html",
+          "description": "County-level drug overdose deaths by month, 1999-2023",
+          "granularity": ["county", "monthly"],
+          "years": [1999, 2023],
+          "join_key": "county_fips",
+          "download": "manual",
+          "collisions": [
+            {
+              "with": "noaa-storm-events",
+              "hypothesis": "Do opioid deaths spike 1-6 months after major disasters?"
+            },
+            {
+              "with": "census-migration",
+              "hypothesis": "Does population churn correlate with overdose rates?"
+            },
+            {
+              "with": "bls-unemployment",
+              "hypothesis": "Economic despair → addiction pathway"
+            }
+          ]
+        },
+        {
+          "id": "cdc-wonder-mortality",
+          "title": "CDC WONDER: Underlying Cause of Death",
+          "source": "CDC/NCHS",
+          "url": "https://wonder.cdc.gov/ucd-icd10.html",
+          "description": "All-cause mortality by county, 1999-2020",
+          "granularity": ["county", "yearly"],
+          "years": [1999, 2020],
+          "join_key": "county_fips",
+          "download": "manual",
+          "collisions": []
+        }
+      ]
+    },
+    {
+      "id": "weather",
+      "name": "Weather & Climate",
+      "icon": "🌪️",
+      "datasets": [
+        {
+          "id": "noaa-storm-events",
+          "title": "NOAA Storm Events Database",
+          "source": "NOAA/NCEI",
+          "url": "https://www.ncei.noaa.gov/pub/data/swdi/stormevents/csvfiles/",
+          "description": "Tornadoes, floods, hurricanes with damage/casualty data, 1950-present",
+          "granularity": ["event", "county"],
+          "years": [1950, 2024],
+          "join_key": "state_fips + cz_fips",
+          "download": "direct_csv",
+          "collisions": [
+            {
+              "with": "cdc-wonder-overdose",
+              "hypothesis": "Invisible second wave of deaths after disasters"
+            },
+            {
+              "with": "fbi-ucr-crime",
+              "hypothesis": "Does crime spike after weather disasters?"
+            }
+          ]
+        },
+        {
+          "id": "noaa-climate-normals",
+          "title": "NOAA Daily Climate Normals",
+          "source": "NOAA/NCEI",
+          "url": "https://www.ncei.noaa.gov/products/land-based-station/us-climate-normals",
+          "description": "30-year average temperatures by station",
+          "granularity": ["station", "daily"],
+          "years": [1991, 2020],
+          "join_key": "station_id",
+          "download": "api",
+          "collisions": []
+        }
+      ]
+    },
+    {
+      "id": "crime",
+      "name": "Crime & Justice",
+      "icon": "⚖️",
+      "datasets": [
+        {
+          "id": "fbi-ucr-crime",
+          "title": "FBI Uniform Crime Reports",
+          "source": "FBI",
+          "url": "https://cde.ucr.cjis.gov/",
+          "description": "County-level crime rates by type, 1979-present",
+          "granularity": ["county", "yearly"],
+          "years": [1979, 2023],
+          "join_key": "county_fips",
+          "download": "api",
+          "collisions": [
+            {
+              "with": "epa-heat-waves",
+              "hypothesis": "Temperature-crime threshold analysis"
+            },
+            {
+              "with": "noaa-climate-normals",
+              "hypothesis": "Unseasonable weather → crime deviation"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "economics",
+      "name": "Economics & Labor",
+      "icon": "💼",
+      "datasets": [
+        {
+          "id": "bls-unemployment",
+          "title": "BLS Local Area Unemployment",
+          "source": "BLS",
+          "url": "https://www.bls.gov/lau/",
+          "description": "County-level unemployment rates, monthly",
+          "granularity": ["county", "monthly"],
+          "years": [1990, 2024],
+          "join_key": "county_fips",
+          "download": "api",
+          "collisions": []
+        }
+      ]
+    }
+  ]
+}

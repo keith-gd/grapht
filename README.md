@@ -378,3 +378,30 @@ Start here:
 
 Let's make AI tool spending transparent. 🚀
 
+---
+
+## 🎨 Visualization Showcase
+
+In addition to the agent analytics platform, grapht includes a component library and data stories demonstrating beautiful data visualization.
+
+### Component Library (`/frontend-v2`)
+Reusable Svelte + D3 components for:
+- Scrollytelling
+- Choropleth maps
+- Timeline visualizations
+- Interactive charts
+
+### Data Stories (`/data-stories`)
+In-depth data journalism pieces:
+- **Storm × Overdose**: Do opioid deaths spike after weather disasters?
+- *(more coming)*
+
+### Dataset Discovery (`/tools/dataset-discovery`)
+A curated catalog of government datasets with AI-powered collision suggestions.
+
+## 📖 Design System
+
+See `/docs/design/` for:
+- `DESIGN_PRINCIPLES.md` - Our visual philosophy
+- `RESOURCES.md` - Curated design resources
+
