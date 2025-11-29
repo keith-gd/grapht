@@ -85,15 +85,25 @@
       }));
   });
 
-  // Track expanded state per category
-  let expandedState = $state<Record<string, boolean>>({});
+  // Track expanded state per category - initialize all to true (expanded by default)
+  let expandedState = $state<Record<string, boolean>>(
+    Object.fromEntries(categories.map(cat => [cat.id, true]))
+  );
 
-  // Auto-expand when searching
+  // Auto-expand matching categories when searching, reset to all expanded when cleared
   $effect(() => {
     if (searchResults) {
+      // When searching, expand only matching categories
       const newState: Record<string, boolean> = {};
-      for (const catId of searchResults.matchedCategories) {
-        newState[catId] = true;
+      for (const cat of categories) {
+        newState[cat.id] = searchResults.matchedCategories.has(cat.id);
+      }
+      expandedState = newState;
+    } else {
+      // When search is cleared, expand all categories
+      const newState: Record<string, boolean> = {};
+      for (const cat of categories) {
+        newState[cat.id] = true;
       }
       expandedState = newState;
     }

@@ -41,12 +41,14 @@
   </button>
 
   <div class="accordion-content" class:open={expanded}>
-    {#each category.datasets as dataset (dataset.id)}
-      <DatasetCard
-        {dataset}
-        highlighted={highlightedDatasets.has(dataset.id)}
-      />
-    {/each}
+    <div class="accordion-inner">
+      {#each category.datasets as dataset (dataset.id)}
+        <DatasetCard
+          {dataset}
+          highlighted={highlightedDatasets.has(dataset.id)}
+        />
+      {/each}
+    </div>
   </div>
 </div>
 
@@ -115,8 +117,9 @@
     grid-template-rows: 1fr;
   }
 
-  .accordion-content > :global(*) {
+  .accordion-inner {
     overflow: hidden;
+    min-height: 0;
   }
 
   @media (prefers-reduced-motion: reduce) {
