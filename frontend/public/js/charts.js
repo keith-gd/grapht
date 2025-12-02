@@ -1,14 +1,55 @@
-// D3 Chart Components with Sleek Dark Theme
+// D3 Chart Components - Precise & Weighty Design
+// Following Design Principles: instrument-like, no purple, high contrast
+
+// Accessibility: Check reduced motion preference
+const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 const COLORS = {
-  primary: '#818cf8',    // Indigo
-  secondary: '#c084fc',  // Purple
-  tertiary: '#2dd4bf',   // Teal
-  quaternary: '#f472b6', // Pink
-  background: 'rgba(255, 255, 255, 0.05)',
-  text: '#94a3b8',
-  grid: 'rgba(255, 255, 255, 0.05)',
-  tooltipBg: 'rgba(15, 23, 42, 0.95)'
+  // Primary palette (no purple!)
+  primary: '#3b82f6',    // Blue
+  secondary: '#22c55e',  // Green
+  tertiary: '#f59e0b',   // Amber
+  quaternary: '#ef4444', // Red
+
+  // Background system
+  background: '#0f0f0f',
+  surface: '#1a1a1a',
+  border: '#2a2a2a',
+
+  // Text
+  text: '#f5f5f5',
+  textSecondary: '#a0a0a0',
+
+  // Status colors
+  success: '#22c55e',
+  warning: '#f59e0b',
+  error: '#ef4444',
+  info: '#3b82f6',
+
+  // Agent-specific colors
+  agents: {
+    claude_code: '#3b82f6',
+    cursor: '#22c55e',
+    copilot: '#f59e0b',
+    factory_droid: '#ef4444'
+  },
+
+  // Accent (use sparingly)
+  highlight: '#fbbf24',
+
+  // Legacy compatibility
+  grid: 'rgba(255, 255, 255, 0.08)',
+  tooltipBg: 'rgba(15, 15, 15, 0.95)'
+};
+
+// Weighted transition timings (feel like precision instruments)
+const TIMING = {
+  fast: REDUCED_MOTION ? 0 : 100,
+  normal: REDUCED_MOTION ? 0 : 200,
+  slow: REDUCED_MOTION ? 0 : 300,
+  gauge: REDUCED_MOTION ? 0 : 600,  // Analog gauge needle behavior
+  easeOut: 'cubic-bezier(0.34, 1.56, 0.64, 1)',      // Overshoot for buttons
+  easeGauge: 'cubic-bezier(0.68, -0.55, 0.27, 1.55)' // Needle inertia
 };
 
 // Common chart setup
@@ -146,7 +187,7 @@ function renderDistributions(data, containerPrefix) {
   renderDistributionChart(costs, `${containerPrefix}-cost`, {
     label: 'Cost ($)',
     format: d => `$${d.toFixed(2)}`,
-    color: '#f472b6'
+    color: COLORS.quaternary  // Red for cost/money
   });
 
   // Duration distribution
@@ -160,7 +201,7 @@ function renderDistributions(data, containerPrefix) {
   renderDistributionChart(durations, `${containerPrefix}-duration`, {
     label: 'Duration (min)',
     format: d => `${d.toFixed(0)}m`,
-    color: '#818cf8'
+    color: COLORS.primary  // Blue for time
   });
 
   // Output/Input Ratio (verbosity)
@@ -173,7 +214,7 @@ function renderDistributions(data, containerPrefix) {
   renderDistributionChart(ratios, `${containerPrefix}-efficiency`, {
     label: 'Output/Input Ratio',
     format: d => d.toFixed(2),
-    color: '#2dd4bf',
+    color: COLORS.secondary,  // Green for efficiency
     bins: 15
   });
 }
@@ -322,12 +363,7 @@ function renderProductivityScatter(data, containerId) {
     };
   }).filter(d => d.tokensPerMin > 0 && d.tokensPerMin < 5000 && d.cost > 0);
 
-  const colorMap = {
-    'claude_code': '#818cf8',
-    'cursor': '#c084fc',
-    'copilot': '#2dd4bf',
-    'factory_droid': '#f472b6'
-  };
+  const colorMap = COLORS.agents;
 
   const x = d3.scaleLinear()
     .domain([0, d3.max(scatterData, d => d.tokensPerMin) * 1.1])
@@ -585,12 +621,7 @@ function renderVarianceChart(data, containerId) {
   // Get unique agent types
   const agentTypes = [...new Set(filteredData.map(d => d.agent_type))];
 
-  const colorMap = {
-    'claude_code': '#818cf8',
-    'cursor': '#c084fc',
-    'copilot': '#2dd4bf',
-    'factory_droid': '#f472b6'
-  };
+  const colorMap = COLORS.agents;
 
   const color = d3.scaleOrdinal()
     .domain(agentTypes)

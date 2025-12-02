@@ -330,5 +330,263 @@ router.get('/traces/:trace_id', authenticate, async (req, res, next) => {
   }
 });
 
+// ============================================
+// Archive Wall Endpoints (Personal Data Stories)
+// ============================================
+
+/**
+ * GET /api/analytics/archive/first-session
+ * "Your First Session" - Personal hook for Archive Wall
+ */
+router.get('/archive/first-session', authenticate, async (req, res, next) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        session_id,
+        session_start,
+        session_end,
+        agent_type,
+        model_name,
+        total_cost,
+        input_tokens,
+        output_tokens,
+        (input_tokens + output_tokens) as total_tokens,
+        EXTRACT(EPOCH FROM (session_end - session_start)) / 60.0 as duration_minutes
+      FROM raw.agent_sessions
+      WHERE session_start IS NOT NULL
+      ORDER BY session_start ASC
+      LIMIT 1
+    `);
+
+    if (result.rows.length === 0) {
+      return res.json({ found: false, message: 'No sessions yet' });
+    }
+
+    const session = result.rows[0];
+    const dateStr = new Date(session.session_start).toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+    res.json({
+      found: true,
+      session,
+      story: {
+        headline: 'Your First Session',
+        subhead: 'It all started on ' + dateStr,
+        insight: 'You used ' + (session.agent_type || 'an agent') + ' and spent $' + (session.total_cost || 0).toFixed(2)
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching first session:', error);
+    next(error);
+  }
+});
+
+/**
+ * GET /api/analytics/archive/most-expensive-day
+ * Pattern revelation - which day cost the most?
+ */
+router.get('/archive/most-expensive-day', authenticate, async (req, res, next) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        CAST(session_start AS DATE) as date,
+        COUNT(*) as session_count,
+        SUM(total_cost) as total_cost,
+        SUM(input_tokens + output_tokens) as total_tokens,
+        array_agg(DISTINCT agent_type) as agents_used
+      FROM raw.agent_sessions
+      WHERE session_start IS NOT NULL
+      GROUP BY CAST(session_start AS DATE)
+      ORDER BY total_cost DESC
+      LIMIT 1
+    `);
+
+    if (result.rows.length === 0) {
+      return res.json({ found: false, message: 'No session data yet' });
+    }
+
+    const day = result.rows[0];
+    res.json({
+      found: true,
+      day,
+      story: {
+        headline: 'Your Most Expensive Day',
+        subhead: new Date(day.date).toLocaleDateString('en-US', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        }),
+        insight: 'You ran ' + day.session_count + ' sessions costing $' + (day.total_cost || 0).toFixed(2) + ' total',
+        tokens: day.total_tokens,
+        agents: day.agents_used
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching most expensive day:', error);
+    next(error);
+  }
+});
+
+/**
+ * GET /api/analytics/archive/favorite-agent
+ * Behavioral insight - which agent do you use most?
+ */
+router.get('/archive/favorite-agent', authenticate, async (req, res, next) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        agent_type,
+        COUNT(*) as session_count,
+        SUM(total_cost) as total_cost,
+        SUM(input_tokens + output_tokens) as total_tokens,
+        AVG(EXTRACT(EPOCH FROM (session_end - session_start)) / 60.0) as avg_duration_minutes,
+        MIN(session_start) as first_used,
+        MAX(session_start) as last_used
+      FROM raw.agent_sessions
+      WHERE agent_type IS NOT NULL
+      GROUP BY agent_type
+      ORDER BY session_count DESC
+    `);
+
+    if (result.rows.length === 0) {
+      return res.json({ found: false, message: 'No agent data yet' });
+    }
+
+    const favorite = result.rows[0];
+    const allAgents = result.rows;
+    const totalSessions = allAgents.reduce((sum, a) => sum + parseInt(a.session_count), 0);
+    const percentage = ((favorite.session_count / totalSessions) * 100).toFixed(0);
+
+    res.json({
+      found: true,
+      favorite,
+      allAgents,
+      story: {
+        headline: 'Your Favorite Agent',
+        subhead: favorite.agent_type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
+        insight: percentage + '% of your sessions (' + favorite.session_count + ' total)',
+        breakdown: allAgents.map(a => ({
+          agent: a.agent_type,
+          count: parseInt(a.session_count),
+          percentage: ((a.session_count / totalSessions) * 100).toFixed(1)
+        }))
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching favorite agent:', error);
+    next(error);
+  }
+});
+
+/**
+ * GET /api/analytics/archive/biggest-win
+ * Commit with the most impact (lines added)
+ */
+router.get('/archive/biggest-win', authenticate, async (req, res, next) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        c.commit_hash,
+        c.commit_message,
+        c.commit_timestamp,
+        c.files_changed,
+        c.lines_added,
+        c.lines_deleted,
+        c.repository,
+        c.author_name,
+        s.agent_type,
+        s.total_cost as session_cost,
+        s.session_id
+      FROM raw.git_commits c
+      LEFT JOIN raw.agent_sessions s ON c.agent_session_id = s.session_id
+      WHERE c.lines_added > 0
+      ORDER BY c.lines_added DESC
+      LIMIT 1
+    `);
+
+    if (result.rows.length === 0) {
+      return res.json({ found: false, message: 'No commits with code additions yet' });
+    }
+
+    const commit = result.rows[0];
+    const netLines = (commit.lines_added || 0) - (commit.lines_deleted || 0);
+
+    res.json({
+      found: true,
+      commit,
+      story: {
+        headline: 'Your Biggest Win',
+        subhead: '+' + commit.lines_added + ' lines in one commit',
+        insight: commit.commit_message || 'No commit message',
+        details: {
+          repository: commit.repository,
+          filesChanged: commit.files_changed,
+          netLines,
+          agent: commit.agent_type,
+          date: commit.commit_timestamp
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching biggest win:', error);
+    next(error);
+  }
+});
+
+/**
+ * GET /api/analytics/archive/summary
+ * All Archive Wall data in one call (for efficiency)
+ */
+router.get('/archive/summary', authenticate, async (req, res, next) => {
+  try {
+    // Run all queries in parallel
+    const [firstSession, expensiveDay, favoriteAgent, biggestWin, totals] = await Promise.all([
+      pool.query(`
+        SELECT session_id, session_start, agent_type, total_cost
+        FROM raw.agent_sessions
+        WHERE session_start IS NOT NULL
+        ORDER BY session_start ASC LIMIT 1
+      `),
+      pool.query(`
+        SELECT CAST(session_start AS DATE) as date, COUNT(*) as sessions, SUM(total_cost) as cost
+        FROM raw.agent_sessions WHERE session_start IS NOT NULL
+        GROUP BY CAST(session_start AS DATE) ORDER BY cost DESC LIMIT 1
+      `),
+      pool.query(`
+        SELECT agent_type, COUNT(*) as count
+        FROM raw.agent_sessions WHERE agent_type IS NOT NULL
+        GROUP BY agent_type ORDER BY count DESC LIMIT 1
+      `),
+      pool.query(`
+        SELECT commit_hash, lines_added, commit_message, commit_timestamp
+        FROM raw.git_commits WHERE lines_added > 0
+        ORDER BY lines_added DESC LIMIT 1
+      `),
+      pool.query(`
+        SELECT
+          COUNT(*) as total_sessions,
+          SUM(total_cost) as total_cost,
+          SUM(input_tokens + output_tokens) as total_tokens
+        FROM raw.agent_sessions
+      `)
+    ]);
+
+    res.json({
+      firstSession: firstSession.rows[0] || null,
+      mostExpensiveDay: expensiveDay.rows[0] || null,
+      favoriteAgent: favoriteAgent.rows[0] || null,
+      biggestWin: biggestWin.rows[0] || null,
+      totals: totals.rows[0] || { total_sessions: 0, total_cost: 0, total_tokens: 0 }
+    });
+  } catch (error) {
+    console.error('Error fetching archive summary:', error);
+    next(error);
+  }
+});
+
 module.exports = router;
 

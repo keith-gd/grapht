@@ -14,7 +14,7 @@ app.use(express.static(path.join(__dirname, '../../frontend/public')));
 
 // CORS configuration - allow frontend, Metabase, and file:// for local dev
 const corsOptions = {
-  origin: ['http://localhost:3001', 'http://localhost:3000', 'http://localhost:8000', 'null'],
+  origin: ['http://localhost:3001', 'http://localhost:3000', 'http://localhost:8000', 'http://localhost:5173', 'null'],
   credentials: true,
   optionsSuccessStatus: 200
 };

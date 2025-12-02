@@ -6,29 +6,77 @@
 }
 
 :root {
-  --bg-dark: #0f172a;
-  --bg-card: rgba(30, 41, 59, 0.7);
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --accent-primary: #818cf8;
-  --accent-secondary: #c084fc;
-  --success: #34d399;
-  --warning: #fbbf24;
-  --danger: #f87171;
-  --card-border: 1px solid rgba(255, 255, 255, 0.1);
-  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  /* Precise & Weighty Design System - No purple, no glass morphism */
+
+  /* Background system */
+  --bg-dark: #0f0f0f;
+  --bg-surface: #1a1a1a;
+  --bg-card: #1a1a1a;
+
+  /* Text (high contrast) */
+  --text-primary: #f5f5f5;
+  --text-secondary: #a0a0a0;
+
+  /* Primary colors (no purple!) */
+  --accent-primary: #3b82f6;    /* Blue */
+  --accent-secondary: #22c55e;  /* Green */
+
+  /* Status colors */
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --info: #3b82f6;
+
+  /* Highlight (gold - for "aha" moments) */
+  --highlight: #fbbf24;
+
+  /* Agent colors */
+  --agent-claude: #3b82f6;
+  --agent-cursor: #22c55e;
+  --agent-copilot: #f59e0b;
+  --agent-factory: #ef4444;
+
+  /* Borders - solid, not transparent */
+  --border-color: #2a2a2a;
+  --card-border: 2px solid var(--border-color);
+
+  /* Shadows - hard, not soft */
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.6);
+  --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.7);
+
+  /* Instrument backlighting */
+  --glow-blue: 0 0 15px rgba(59, 130, 246, 0.3);
+  --glow-green: 0 0 15px rgba(34, 197, 94, 0.3);
+
+  /* Timing (weighted interactions) */
+  --transition-fast: 100ms;
+  --transition-normal: 200ms;
+  --transition-slow: 300ms;
+  --ease-out-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  /* Typography: monospace, larger, heavier */
+  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Monaco, monospace;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.6;
+
+  /* Solid dark background - no gradients */
   background-color: var(--bg-dark);
-  background-image: 
-    radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
-    radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%), 
-    radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%);
   min-height: 100vh;
   padding: 2rem;
   color: var(--text-primary);
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 .dashboard {
@@ -36,15 +84,13 @@ body {
   margin: 0 auto;
 }
 
-/* Header */
+/* Header - solid, no glass morphism */
 .dashboard-header {
   background: var(--bg-card);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
   padding: 1.5rem 2rem;
-  border-radius: 16px;
+  border-radius: 8px;  /* Reduced radius - more precise */
   border: var(--card-border);
-  box-shadow: var(--glass-shadow);
+  box-shadow: var(--shadow-md);
   margin-bottom: 2rem;
   display: flex;
   justify-content: space-between;
@@ -52,11 +98,9 @@ body {
 }
 
 .dashboard-header h1 {
-  font-size: 1.75rem;
+  font-size: 32px;
   font-weight: 700;
-  background: linear-gradient(to right, var(--accent-primary), var(--accent-secondary));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--text-primary);  /* Solid color, no gradient */
   margin-bottom: 0.25rem;
 }
 
@@ -105,21 +149,26 @@ body {
 
 .card {
   background: var(--bg-card);
-  backdrop-filter: blur(12px);
   border: var(--card-border);
   padding: 1.75rem;
-  border-radius: 16px;
-  box-shadow: var(--glass-shadow);
+  border-radius: 8px;
+  box-shadow: var(--shadow-md);
   display: flex;
   align-items: center;
   gap: 1.25rem;
-  transition: all 0.3s ease;
+  transition: transform var(--transition-normal) var(--ease-out-bounce),
+              box-shadow var(--transition-normal) ease-out;
 }
 
+/* Weighted hover - feels like pressing a button */
 .card:hover {
-  transform: translateY(-4px);
-  border-color: rgba(255, 255, 255, 0.2);
-  box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.45);
+  transform: scale(1.02) translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.card:active {
+  transform: scale(0.98);
+  transition: transform 50ms;
 }
 
 .card-icon {
@@ -172,12 +221,15 @@ body {
 
 .chart-container {
   background: var(--bg-card);
-  backdrop-filter: blur(12px);
   border: var(--card-border);
   padding: 1.5rem;
-  border-radius: 16px;
-  box-shadow: var(--glass-shadow);
+  border-radius: 8px;
+  box-shadow: var(--shadow-md);
   grid-column: span 6;
+  /* Instrument bezel effect */
+  box-shadow:
+    var(--shadow-md),
+    inset 0 0 30px rgba(0, 0, 0, 0.3);
 }
 
 .chart-container.full-width {
