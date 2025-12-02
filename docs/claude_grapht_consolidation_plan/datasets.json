@@ -1,0 +1,410 @@
+{
+  "meta": {
+    "version": "1.0.0",
+    "last_updated": "2025-01-21",
+    "total_datasets": 24,
+    "categories": 6
+  },
+  "categories": [
+    {
+      "id": "health",
+      "name": "Health & Mortality",
+      "icon": "🏥",
+      "description": "CDC mortality, disease surveillance, and health outcomes data",
+      "datasets": [
+        {
+          "id": "cdc-wonder-overdose",
+          "title": "CDC WONDER: Drug Overdose Deaths",
+          "source": "CDC/NCHS",
+          "url": "https://wonder.cdc.gov/mcd.html",
+          "description": "County-level drug overdose deaths by month. Gold standard for overdose research.",
+          "granularity": ["county", "monthly"],
+          "years": [1999, 2023],
+          "join_key": "county_fips",
+          "download_type": "manual_query",
+          "icd_codes": "X40-X44, X60-X64, Y10-Y14",
+          "notes": "Values 1-9 suppressed for privacy. Use Multiple Cause of Death database.",
+          "collisions": [
+            {
+              "with": "noaa-storm-events",
+              "hypothesis": "Do opioid deaths spike 1-6 months after major disasters? (Displacement, PTSD, treatment disruption)"
+            },
+            {
+              "with": "bls-unemployment",
+              "hypothesis": "Does county unemployment predict overdose rates? (Economic despair pathway)"
+            },
+            {
+              "with": "census-migration",
+              "hypothesis": "Do high-churn counties have higher overdose rates? (Social disconnection)"
+            }
+          ],
+          "used_in": []
+        },
+        {
+          "id": "cdc-wonder-mortality",
+          "title": "CDC WONDER: Underlying Cause of Death",
+          "source": "CDC/NCHS",
+          "url": "https://wonder.cdc.gov/ucd-icd10.html",
+          "description": "All-cause mortality by county, age, race, sex. Most comprehensive mortality data.",
+          "granularity": ["county", "yearly"],
+          "years": [1999, 2020],
+          "join_key": "county_fips",
+          "download_type": "manual_query",
+          "collisions": [
+            {
+              "with": "epa-air-quality",
+              "hypothesis": "Do high-pollution counties have elevated mortality? (Beyond EPA thresholds)"
+            }
+          ]
+        },
+        {
+          "id": "cdc-brfss",
+          "title": "CDC BRFSS: Behavioral Risk Factors",
+          "source": "CDC",
+          "url": "https://www.cdc.gov/brfss/data_documentation/index.htm",
+          "description": "Annual telephone survey on health behaviors, chronic conditions, preventive services.",
+          "granularity": ["state", "yearly"],
+          "years": [1984, 2023],
+          "join_key": "state_fips",
+          "download_type": "direct_download",
+          "collisions": []
+        },
+        {
+          "id": "cdc-wonder-heat",
+          "title": "CDC WONDER: Daily Air Temperatures",
+          "source": "CDC/NASA",
+          "url": "https://wonder.cdc.gov/nasa-nldas.html",
+          "description": "County-level daily temperatures and heat index from satellite data.",
+          "granularity": ["county", "daily"],
+          "years": [1979, 2011],
+          "join_key": "county_fips",
+          "download_type": "manual_query",
+          "collisions": [
+            {
+              "with": "fbi-ucr-crime",
+              "hypothesis": "Is there a temperature threshold where violent crime accelerates?"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "weather",
+      "name": "Weather & Climate",
+      "icon": "🌪️",
+      "description": "NOAA storm events, climate normals, and extreme weather data",
+      "datasets": [
+        {
+          "id": "noaa-storm-events",
+          "title": "NOAA Storm Events Database",
+          "source": "NOAA/NCEI",
+          "url": "https://www.ncei.noaa.gov/pub/data/swdi/stormevents/csvfiles/",
+          "description": "Every significant weather event: tornadoes, floods, hurricanes, hail. Includes damage estimates and casualties.",
+          "granularity": ["event", "county"],
+          "years": [1950, 2024],
+          "join_key": "state_fips + cz_fips (combine to 5-digit county FIPS)",
+          "download_type": "direct_csv_gz",
+          "file_pattern": "StormEvents_details-ftp_v1.0_dYYYY_cYYYYMMDD.csv.gz",
+          "notes": "CZ_FIPS is county zone, not full county FIPS. Combine with STATE_FIPS.",
+          "collisions": [
+            {
+              "with": "cdc-wonder-overdose",
+              "hypothesis": "Invisible second wave: overdose deaths spike 2 months after major storms"
+            },
+            {
+              "with": "fbi-ucr-crime",
+              "hypothesis": "Does violent crime spike after weather disasters?"
+            },
+            {
+              "with": "bls-unemployment",
+              "hypothesis": "Do storms cause lasting unemployment spikes in affected counties?"
+            }
+          ],
+          "used_in": [
+            {
+              "title": "Storm × Overdose (in progress)",
+              "url": "https://github.com/keith-gd/grapht/tree/main/data-stories/storm-overdose"
+            }
+          ]
+        },
+        {
+          "id": "noaa-climate-normals",
+          "title": "NOAA Daily Climate Normals (1991-2020)",
+          "source": "NOAA/NCEI",
+          "url": "https://www.ncei.noaa.gov/products/land-based-station/us-climate-normals",
+          "description": "30-year average temperatures by weather station. Baseline for anomaly detection.",
+          "granularity": ["station", "daily"],
+          "years": [1991, 2020],
+          "join_key": "station_id",
+          "download_type": "api_or_bulk",
+          "collisions": [
+            {
+              "with": "fbi-ucr-crime",
+              "hypothesis": "It's not absolute temperature—it's deviation from normal that drives crime"
+            }
+          ]
+        },
+        {
+          "id": "noaa-swdi",
+          "title": "NOAA Severe Weather Data Inventory (SWDI)",
+          "source": "NOAA/NCEI",
+          "url": "https://www.ncei.noaa.gov/products/severe-weather-data-inventory",
+          "description": "Radar-detected severe weather: hail, tornadoes, mesocyclones. Point data with lat/lon.",
+          "granularity": ["event", "point"],
+          "years": [1995, 2024],
+          "join_key": "lat/lon (requires geocoding to county)",
+          "download_type": "api_or_bulk",
+          "collisions": []
+        },
+        {
+          "id": "epa-heat-waves",
+          "title": "EPA Heat Wave Characteristics",
+          "source": "EPA",
+          "url": "https://www.epa.gov/climate-indicators/climate-change-indicators-heat-waves",
+          "description": "Heat wave frequency, duration, intensity for 50 large cities, 1961-2023.",
+          "granularity": ["city", "yearly"],
+          "years": [1961, 2023],
+          "join_key": "city_name",
+          "download_type": "direct_download",
+          "collisions": []
+        }
+      ]
+    },
+    {
+      "id": "crime",
+      "name": "Crime & Justice",
+      "icon": "⚖️",
+      "description": "FBI crime statistics, arrests, and criminal justice data",
+      "datasets": [
+        {
+          "id": "fbi-ucr-crime",
+          "title": "FBI Uniform Crime Reports (UCR)",
+          "source": "FBI",
+          "url": "https://cde.ucr.cjis.gov/",
+          "description": "County-level crime rates by type (violent, property). Primary source for crime research.",
+          "granularity": ["county", "yearly"],
+          "years": [1979, 2023],
+          "join_key": "county_fips",
+          "download_type": "api",
+          "api_docs": "https://cde.ucr.cjis.gov/LATEST/webapp/#/pages/docApi",
+          "notes": "Transitioning to NIBRS. Historical UCR data still available.",
+          "collisions": [
+            {
+              "with": "cdc-wonder-heat",
+              "hypothesis": "Temperature-crime threshold: at what degree does violence spike?"
+            },
+            {
+              "with": "noaa-storm-events",
+              "hypothesis": "Post-disaster crime waves: looting, domestic violence, fraud"
+            },
+            {
+              "with": "epa-air-quality",
+              "hypothesis": "Does poor air quality correlate with assault rates? (Pollution → aggression)"
+            }
+          ]
+        },
+        {
+          "id": "fbi-nibrs",
+          "title": "FBI NIBRS: Incident-Based Reporting",
+          "source": "FBI",
+          "url": "https://cde.ucr.cjis.gov/",
+          "description": "Detailed incident-level crime data with victim/offender demographics.",
+          "granularity": ["incident", "agency"],
+          "years": [1991, 2023],
+          "join_key": "ori (agency ID)",
+          "download_type": "api_or_bulk",
+          "notes": "More detailed than UCR but coverage varies by state.",
+          "collisions": []
+        },
+        {
+          "id": "bjs-ncvs",
+          "title": "BJS National Crime Victimization Survey",
+          "source": "BJS",
+          "url": "https://bjs.ojp.gov/data-collection/ncvs",
+          "description": "Survey-based crime data including unreported crimes. Complements UCR.",
+          "granularity": ["national", "yearly"],
+          "years": [1993, 2023],
+          "join_key": "none (national only)",
+          "download_type": "api",
+          "collisions": []
+        }
+      ]
+    },
+    {
+      "id": "economics",
+      "name": "Economics & Labor",
+      "icon": "💼",
+      "description": "BLS employment, wages, and economic indicators",
+      "datasets": [
+        {
+          "id": "bls-unemployment",
+          "title": "BLS Local Area Unemployment Statistics",
+          "source": "BLS",
+          "url": "https://www.bls.gov/lau/",
+          "description": "County-level unemployment rates, monthly. Key economic distress indicator.",
+          "granularity": ["county", "monthly"],
+          "years": [1990, 2024],
+          "join_key": "county_fips",
+          "download_type": "api_or_bulk",
+          "api_docs": "https://www.bls.gov/developers/",
+          "collisions": [
+            {
+              "with": "cdc-wonder-overdose",
+              "hypothesis": "Unemployment → overdose: does economic despair drive addiction?"
+            },
+            {
+              "with": "fbi-ucr-crime",
+              "hypothesis": "Property crime vs. unemployment correlation"
+            }
+          ]
+        },
+        {
+          "id": "bls-qcew",
+          "title": "BLS Quarterly Census of Employment & Wages",
+          "source": "BLS",
+          "url": "https://www.bls.gov/cew/",
+          "description": "Employment and wages by industry and county. Most comprehensive employment data.",
+          "granularity": ["county", "quarterly"],
+          "years": [1990, 2024],
+          "join_key": "county_fips",
+          "download_type": "bulk_download",
+          "collisions": []
+        },
+        {
+          "id": "census-acs-income",
+          "title": "Census ACS: Income & Poverty",
+          "source": "Census Bureau",
+          "url": "https://data.census.gov/",
+          "description": "Median household income, poverty rates, and economic characteristics.",
+          "granularity": ["county", "yearly (5-year estimates)"],
+          "years": [2005, 2023],
+          "join_key": "county_fips",
+          "download_type": "api",
+          "api_docs": "https://www.census.gov/data/developers/data-sets/acs-5year.html",
+          "collisions": []
+        }
+      ]
+    },
+    {
+      "id": "demographics",
+      "name": "Demographics & Census",
+      "icon": "👥",
+      "description": "Census population, migration, and demographic data",
+      "datasets": [
+        {
+          "id": "census-population",
+          "title": "Census Population Estimates",
+          "source": "Census Bureau",
+          "url": "https://www.census.gov/programs-surveys/popest.html",
+          "description": "Annual county population estimates between decennial censuses.",
+          "granularity": ["county", "yearly"],
+          "years": [2010, 2023],
+          "join_key": "county_fips",
+          "download_type": "api_or_bulk",
+          "notes": "Essential for calculating rates (per 100k)",
+          "collisions": []
+        },
+        {
+          "id": "census-migration",
+          "title": "Census ACS: Migration Flows",
+          "source": "Census Bureau",
+          "url": "https://www.census.gov/topics/population/migration/guidance/county-to-county-migration-flows.html",
+          "description": "County-to-county migration patterns from ACS.",
+          "granularity": ["county-pair", "yearly"],
+          "years": [2011, 2022],
+          "join_key": "origin_fips, dest_fips",
+          "download_type": "bulk_download",
+          "collisions": [
+            {
+              "with": "cdc-wonder-overdose",
+              "hypothesis": "Does high migration churn correlate with overdose rates?"
+            }
+          ]
+        },
+        {
+          "id": "census-acs-demographics",
+          "title": "Census ACS: Demographic Characteristics",
+          "source": "Census Bureau",
+          "url": "https://data.census.gov/",
+          "description": "Age, sex, race, ethnicity, education, and housing characteristics.",
+          "granularity": ["county", "yearly (5-year estimates)"],
+          "years": [2005, 2023],
+          "join_key": "county_fips",
+          "download_type": "api",
+          "collisions": []
+        }
+      ]
+    },
+    {
+      "id": "environment",
+      "name": "Environment & Energy",
+      "icon": "🌿",
+      "description": "EPA pollution, air quality, and environmental data",
+      "datasets": [
+        {
+          "id": "epa-air-quality",
+          "title": "EPA Air Quality System (AQS)",
+          "source": "EPA",
+          "url": "https://aqs.epa.gov/aqsweb/airdata/download_files.html",
+          "description": "Daily air quality measurements (PM2.5, ozone) by monitoring station.",
+          "granularity": ["station", "daily"],
+          "years": [1980, 2024],
+          "join_key": "county_fips",
+          "download_type": "bulk_download",
+          "collisions": [
+            {
+              "with": "fbi-ucr-crime",
+              "hypothesis": "Bad air → bad moods → assault? (Pollution-aggression link)"
+            },
+            {
+              "with": "cdc-wonder-mortality",
+              "hypothesis": "Air quality exceeds thresholds → mortality spike"
+            }
+          ]
+        },
+        {
+          "id": "epa-tri",
+          "title": "EPA Toxics Release Inventory",
+          "source": "EPA",
+          "url": "https://www.epa.gov/toxics-release-inventory-tri-program/tri-basic-data-files-calendar-years-1987-present",
+          "description": "Industrial toxic chemical releases by facility.",
+          "granularity": ["facility", "yearly"],
+          "years": [1987, 2023],
+          "join_key": "lat/lon, county_fips",
+          "download_type": "bulk_download",
+          "collisions": []
+        },
+        {
+          "id": "usgs-water",
+          "title": "USGS National Water Information System",
+          "source": "USGS",
+          "url": "https://waterdata.usgs.gov/nwis",
+          "description": "Streamflow, groundwater levels, and water quality data.",
+          "granularity": ["site", "daily"],
+          "years": [varies, 2024],
+          "join_key": "site_id (requires geocoding)",
+          "download_type": "api",
+          "api_docs": "https://waterservices.usgs.gov/",
+          "collisions": []
+        },
+        {
+          "id": "noaa-drought",
+          "title": "NOAA US Drought Monitor",
+          "source": "NOAA/NDMC",
+          "url": "https://droughtmonitor.unl.edu/Data/DataDownload.aspx",
+          "description": "Weekly drought severity maps at county level.",
+          "granularity": ["county", "weekly"],
+          "years": [2000, 2024],
+          "join_key": "county_fips",
+          "download_type": "bulk_download",
+          "collisions": [
+            {
+              "with": "cdc-wonder-mortality",
+              "hypothesis": "Multi-year droughts in farming counties → suicide spikes?"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
